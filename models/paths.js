@@ -1,21 +1,29 @@
 var rethinkdb = require('rethinkdb');
 
 
-function UserModel(){
+function PathModel(){
 	
 	var properties={isNew:true};
 	
 	function setProperty(property, value){
 		
 		properties[property]=value;
+		
+		if(!properties.passengers) {
+			properties.passengers=[];
+		}
 	}
 	
 	function setProperties(propertyValues){
 		
 		for(var i in propertyValues){
 			if(i=='Id') continue;
-			
+		
 			properties[i]=propertyValues[i];
+		}
+		
+		if(!properties.passengers) {
+			properties.passengers=[];
 		}
 	}	
 	
@@ -23,18 +31,19 @@ function UserModel(){
 		return(properties);
 	}	
 	
-	function getById(userId){
+	function getById(Id){
 		properties.isNew=false;
 		
-		return rethinkdb.table('user').run(GLOBAL.dbConn).then(function(cursor){ 
+		return rethinkdb.table('path').run(GLOBAL.dbConn).then(function(cursor){ 
 			return cursor.toArray();
 		}).then(function(result) {
 			
 			if(result.length==0) {
-				return(new Error('User : '+userId+' not found '));
+				throw new Error('Path : '+Id+' not found ');
+				return(new Error('Path : '+Id+' not found '));
 			}
 			
-			var user=new UserModel();
+			var user=new PathModel();
 			
 			user.setProperties(result[0]);
 			users.setProperty('isNew', false);
@@ -44,7 +53,7 @@ function UserModel(){
 	}
 	
 	function find(){
-		return rethinkdb.table('user').run(GLOBAL.dbConn).then(function(cursor){ 
+		return rethinkdb.table('path').run(GLOBAL.dbConn).then(function(cursor){ 
 			return cursor.toArray();
 		}).then(function(resultOutput) {
 			
@@ -53,7 +62,7 @@ function UserModel(){
 			var users=[];
 			
 			for(var i in resultOutput){
-				users.push(new UserModel());
+				users.push(new PathModel());
 
 				users[i].setProperties(resultOutput[i]);
 				users[i].setProperty('isNew', false);
@@ -64,33 +73,36 @@ function UserModel(){
 		});
 	}
 
-	function insert(name, email, username, password, imageURL){
+	function insert(driverId, maxPassengers, startTime, startLocation,endLocation){
 		
-		setProperties({name:name, email:email, 
-						username:username, password:password, 
-						imageURL:imageURL});
+		setProperties({driver_id:driverId, 
+						max_passengers:maxPassengers,
+						passengers:[],
+						startTime:startTime,
+						start_location:startLocation, 
+						end_location:endLocation});
 		var newUser=this;
-		return rethinkdb.table('user').insert(properties).run(GLOBAL.dbConn).then(function(result){ 
+		return rethinkdb.table('path').insert(properties).run(GLOBAL.dbConn).then(function(result){ 
 			
 			newUser.setProperty('id',result.generated_keys[0]);
 			return newUser;
 		});				
 	}
 	
-	function update(userId, newProperties){
+	function update(Id, newProperties){
 		
 		setProperties(newProperties);
-		setProperty('id', userId);
+		setProperty('id', Id);
 		
 		var updateUser=this;
-		return rethinkdb.table('user').get(userId).update(properties, {returnChanges: true}).run(GLOBAL.dbConn).then(function(result){ 
+		return rethinkdb.table('path').get(Id).update(properties, {returnChanges: true}).run(GLOBAL.dbConn).then(function(result){ 
 
 			return updateUser;
 		});				
 	}
 	
-	function remove(userId){
-		return rethinkdb.table('user').get(userId).delete().run(GLOBAL.dbConn).then(function(result){ 
+	function remove(Id){
+		return rethinkdb.table('path').get(Id).delete().run(GLOBAL.dbConn).then(function(result){ 
 			return result;
 		});	
 	}
@@ -108,6 +120,6 @@ function UserModel(){
 	});
 }
 
-module.exports=UserModel;
+module.exports=PathModel;
 
 

@@ -3,6 +3,7 @@ var rethinkdb = require('rethinkdb');
 GLOBAL.dbConn=null;
 var server=null;
 var users = require('./endpoints/users');
+var paths = require('./endpoints/paths');
 
  rethinkdb.connect({ host: 'localhost', port: 28015 }, function(err, conn) {
   if(err) throw err;
@@ -21,7 +22,10 @@ var users = require('./endpoints/users');
 	var usersEndpoint=new users.Endpoint();
 	usersEndpoint.registerListeners(server);
 	
-	server.get('setup', sample);
+	var pathsEndpoint=new paths.Endpoint();
+	pathsEndpoint.registerListeners(server);
+	
+	//server.get('setup', sample);
 	 
 	server.listen(8081, function () {
 	  console.log('%s listening at %s', server.name, server.url);
