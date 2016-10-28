@@ -1,3 +1,4 @@
+var rethinkdb = require('rethinkdb');
 var UserModel=require('../models/user');
 
 function endpoint(){
@@ -20,7 +21,32 @@ function endpoint(){
 		
 	}
 	
+	function login(req, res, next){
+		var username=req.params.username;
+		var password=req.params.password;
+		
+		var result=new UserModel();
+		
+		result.getByLogin(username, password).then(function(user){
+			
+			if(!user){
+				res.send(400, {error: "Incorrect login details"});
+				return next();
+			}
+			
+			res.send(user.getProperties());
+			return next();
+			
+		}).error(handleError)
+		.finally(next);
+		
+		
+	}
+	
 	function find(req, res, next){
+		
+		console.log(req.headers.userId);
+		
 		var userId=req.params.Id;
 		
 		var result=new UserModel();
@@ -102,14 +128,29 @@ function endpoint(){
 			res.send(500, {error: error.message});
 		}
 	}	
+	
+	function setup(req, res, next) {
+			
+		rethinkdb.db('test').tableCreate('user').run(GLOBAL.dbConn, function(err, result) {
+			if(err) throw err;
+			console.log(result);
+			
+		
+		
+		});
+
+
+		
+	}
 		
 	function registerListeners(service){
 			myService=service;
-		
-			//myService.list(endpointURL, list);
+
+			myService.put(endpointURL+'/setup', setup);
 			myService.get(endpointURL+'/:Id', getById);
 			myService.get(endpointURL, find);
 			myService.put(endpointURL, create);
+			myService.post(endpointURL+'/login', login);
 			myService.post(endpointURL+'/:Id', update);
 			myService.del(endpointURL+'/:Id', remove);
 	}

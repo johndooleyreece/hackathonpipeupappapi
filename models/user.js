@@ -31,7 +31,7 @@ function UserModel(){
 		}).then(function(result) {
 			
 			if(result.length==0) {
-				return(new Error('User : '+userId+' not found '));
+				return(false);
 			}
 			
 			var user=new UserModel();
@@ -42,6 +42,27 @@ function UserModel(){
 			return(user);
 		});
 	}
+	
+	function getByLogin(username, password){
+		properties.isNew=false;
+		
+		return rethinkdb.table('user').filter({username: username, password:password}).run(GLOBAL.dbConn).then(function(cursor){ 
+			return cursor.toArray();
+		}).then(function(result) {
+			
+			if(result.length==0) {
+				return(false);
+			}
+			
+			var user=new UserModel();
+			
+			user.setProperties(result[0]);
+			user.setProperty('isNew', false);
+			
+			return(user);
+		});
+	}
+
 	
 	function find(){
 		return rethinkdb.table('user').run(GLOBAL.dbConn).then(function(cursor){ 
@@ -102,6 +123,7 @@ function UserModel(){
 			setProperty:setProperty,
 			setProperties:setProperties,
 			getProperties:getProperties,
+			getByLogin:getByLogin,
 			getById:getById,
 			find:find,
 			remove:remove

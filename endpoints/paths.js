@@ -21,8 +21,38 @@ function endpoint(){
 		
 	}
 	
+	function findByLocation(req, res, next){
+		var startLocation=req.params.startLocation;
+		var minTime=req.params.minTime;
+		var maxTime=req.params.maxTime;
+		var maxDistance=req.params.maxDistance;
+		
+		console.log('Find by location');
+
+
+		var result=new Model();
+		
+		result.findByLocation(startLocation, minTime, maxTime, maxDistance).then(function(results){
+			
+			console.log(results);
+			
+			var resultsOutput=[];
+			
+			for(var i in results){
+				resultsOutput.push(results[i].getProperties());
+			}
+			
+			res.send(resultsOutput);
+			return next();
+			
+		}).error(handleError)
+		.finally(next);
+	}
+	
 	function find(req, res, next){
 		var id=req.params.Id;
+		
+
 		
 		var result=new Model();
 		
@@ -188,7 +218,15 @@ function endpoint(){
 	}
 	
 	function setup(req, res, next) {
+		
+		rethinkdb.table('path').indexCreate('startLocation.location', {'geo':true}).run(GLOBAL.dbConn, function(err, result) {
+			if(err) throw err;
+			console.log(result);
 			
+			res.send(result);
+			return next();
+		});
+			/*
 		rethinkdb.db('test').tableCreate('path').run(GLOBAL.dbConn, function(err, result) {
 			if(err) throw err;
 			console.log(result);
@@ -216,7 +254,7 @@ function endpoint(){
 		});
 		});
 		
-		});
+		});*/
 
 
 		
@@ -224,6 +262,7 @@ function endpoint(){
 		
 	function handleError(res) {
 		return function(error) {
+			console.log(error);
 			res.send(500, {error: error.message});
 		}
 	}	
@@ -231,6 +270,7 @@ function endpoint(){
 	function registerListeners(service){
 			myService=service;
 		
+			myService.get(endpointURL+'/findByLocation', findByLocation);
 			myService.put(endpointURL+'/:Id/passengers/:passengerId', createPassenger);
 			myService.del(endpointURL+'/:Id/passengers/:passengerId', removePassenger);
 			myService.get(endpointURL+'/:Id/passengers/:passengerId', getPassenger);
@@ -239,6 +279,7 @@ function endpoint(){
 			myService.put(endpointURL+'/setup', setup);
 			myService.get(endpointURL+'/:Id', getById);
 
+			
 			myService.get(endpointURL, find);
 			myService.put(endpointURL, create);
 			
